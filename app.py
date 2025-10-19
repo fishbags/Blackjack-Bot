@@ -247,7 +247,7 @@ def create_deck():
     random.shuffle(deck)
     return deck
 
-@bot.tree.command(name="blackjack", description="Play a game of blackjack. Usage: /blackjack <bet>")
+@bot.tree.command(name="blackjack", description="Play a game of blackjack.")
 async def play_command(interaction: discord.Interaction, bet: int):
     user_id = interaction.user.id
     # Fetch user balance
@@ -269,7 +269,7 @@ async def play_command(interaction: discord.Interaction, bet: int):
     embed.add_field(name="Dealer's Hand", value=f"{dealer_hand[0]}, ?", inline=False)
     await interaction.response.send_message(embed=embed, view=view)
 
-@bot.tree.command(name="highstakes", description="Play a high stakes game of blackjack. Usage: /highstakes <bet>")
+@bot.tree.command(name="highstakes", description="Play a high stakes game of blackjack.")
 async def highstakes_command(interaction: discord.Interaction, bet: int):
     user_id = interaction.user.id
     # Fetch user balance
@@ -339,5 +339,17 @@ async def leaderboard_command(interaction: discord.Interaction):
     view.add_item(select)
     embed = discord.Embed(title="Leaderboard", description="Select a leaderboard type from the dropdown below.", color=discord.Color.from_str("#00A8B5"))
     await interaction.response.send_message(embed=embed, view=view)
+
+@bot.tree.command(name="help", description="Show help information")
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(
+        description="# Blackjack Help\n> Thank you for using Blackjack. Below is a list of available commands for you to use. If you require further assistance, please visit our [Support Server](https://discord.gg/DPzkYc7pZr).\n## Commands",
+        color=discord.Color.from_str("#00A8B5")
+    )
+    for command in bot.tree.get_commands():
+        embed.add_field(name=f"/{command.name}", value=command.description or "No description", inline=True)
+    embed.set_thumbnail(url=bot.user.avatar.url if bot.user.avatar else None)
+    embed.set_footer(text=f"Requested by {interaction.user.display_name}", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
+    await interaction.response.send_message(embed=embed)
 
 bot.run(TOKEN)
