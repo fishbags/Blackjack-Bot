@@ -22,7 +22,7 @@ status_embed = discord.Embed(
     description="`Online & running smoothly! 🃏`",
     color=discord.Color.from_str("#00A8B5")
 )
-status_embed.add_field(name="Latency", value=f"`{int(bot.latency * 1000)} ms`", inline=True)
+status_embed.add_field(name="Latency", value=f"`{bot.latency * 1000} ms`", inline=True)
 status_embed.add_field(name="Users", value=f"`{len(bot.users)}`", inline=True)
 status_embed.add_field(name="Servers", value=f"`{len(bot.guilds)}`", inline=True)
 status_embed.set_footer(text=f"Updated at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
