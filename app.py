@@ -46,17 +46,19 @@ async def update_status():
 @bot.tree.command(name="balance", description="Check your balance")
 async def balance_command(interaction: discord.Interaction):
     user_id = interaction.user.id
+    balance = 0
+    embed = discord.Embed(title="💰 Your Balance", description=f"You have <:coin:1429548357206151401>{fmt(balance)} in your account.", color=discord.Color.from_str("#00A8B5"))
     # Fetch user balance from Supabase
     # Use the latest supabase-py API response handling
     response = supabase_client.table("users").select("balance").eq("id", user_id).execute()
     if response.data and len(response.data) > 0:
         balance = response.data[0]["balance"]
-        await interaction.response.send_message(f"Your balance is: <:coin:1429548357206151401>{fmt(balance)}", ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If no user found, create new user with balance 0
     insert_response = supabase_client.table("users").insert({"id": user_id, "balance": 0}).execute()
     if insert_response.data:
-        await interaction.response.send_message("Your balance is: <:coin:1429548357206151401>0", ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If still no data, show error
     await interaction.response.send_message("Error fetching or creating your balance. Please contact an admin.")
@@ -83,16 +85,19 @@ async def daily_command(interaction: discord.Interaction):
                 remaining = 86400 - (now - last_daily_dt).total_seconds()
                 hours = int(remaining // 3600)
                 minutes = int((remaining % 3600) // 60)
-                await interaction.response.send_message(f"You can claim your next daily reward in ⌚{hours}h {minutes}m.", ephemeral=True)
+                embed = discord.Embed(title="⏳ Daily Reward", description=f"You can claim your next daily reward in ⌚{hours}h {minutes}m.", color=discord.Color.brand_red())
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
         new_balance = balance + daily_reward
         supabase_client.table("users").update({"balance": new_balance, "last_daily": now.isoformat()}).eq("id", user_id).execute()
-        await interaction.response.send_message(f"You have claimed your daily reward of <:coin:1429548357206151401>{fmt(daily_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", ephemeral=True)
+        embed = discord.Embed(title="✅ Daily Reward Claimed", description=f"You have claimed your daily reward of <:coin:1429548357206151401>{fmt(daily_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_green())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If no user found, create new user with balance equal to daily reward and set last_daily
     insert_response = supabase_client.table("users").insert({"id": user_id, "balance": daily_reward, "last_daily": now.isoformat()}).execute()
     if insert_response.data:
-        await interaction.response.send_message(f"You have claimed your daily reward of <:coin:1429548357206151401>{fmt(daily_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(daily_reward)}", ephemeral=True)
+        embed = discord.Embed(title="✅ Daily Reward Claimed", description=f"You have claimed your daily reward of <:coin:1429548357206151401>{fmt(daily_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_green())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     await interaction.response.send_message("Error fetching or creating your balance. Please contact an admin.")
 
@@ -119,16 +124,19 @@ async def weekly_command(interaction: discord.Interaction):
                 days = int(remaining // 86400)
                 hours = int((remaining % 86400) // 3600)
                 minutes = int((remaining % 3600) // 60)
-                await interaction.response.send_message(f"You can claim your next weekly reward in ⌚{days}d {hours}h {minutes}m.", ephemeral=True)
+                embed = discord.Embed(title="⏳ Weekly Reward", description=f"You can claim your next weekly reward in ⌚{days}d {hours}h {minutes}m.", color=discord.Color.brand_red())
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
         new_balance = balance + weekly_reward
         supabase_client.table("users").update({"balance": new_balance, "last_weekly": now.isoformat()}).eq("id", user_id).execute()
-        await interaction.response.send_message(f"You have claimed your weekly reward of <:coin:1429548357206151401>{fmt(weekly_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", ephemeral=True)
+        embed = discord.Embed(title="✅ Weekly Reward Claimed", description=f"You have claimed your weekly reward of <:coin:1429548357206151401>{fmt(weekly_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_green())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If no user found, create new user with balance equal to weekly reward and set last_weekly
     insert_response = supabase_client.table("users").insert({"id": user_id, "balance": weekly_reward, "last_weekly": now.isoformat()}).execute()
     if insert_response.data:
-        await interaction.response.send_message(f"You have claimed your weekly reward of <:coin:1429548357206151401>{fmt(weekly_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(weekly_reward)}", ephemeral=True)
+        embed = discord.Embed(title="✅ Weekly Reward Claimed", description=f"You have claimed your weekly reward of <:coin:1429548357206151401>{fmt(weekly_reward)}!\nYour new balance is: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_green())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
 class BlackjackView(discord.ui.View):
@@ -238,7 +246,9 @@ class BlackjackView(discord.ui.View):
             'tied' if payout == self.bet else
             'lost'
         )
-        await interaction.followup.send(f"Game over! You {result_str} <:coin:1429548357206151401>{fmt(self.bet)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}", ephemeral=True)
+        embed = discord.Embed(title="💰 Game Over", color=discord.Color.from_str("#00A8B5"))
+        embed.add_field(name="Result", value=f"You {result_str} <:coin:1429548357206151401>{fmt(self.bet)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}", inline=False)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 def create_deck():
     suits = ['♠', '♥', '♦', '♣']
