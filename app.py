@@ -15,6 +15,18 @@ supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase_client = create_client(supabase_url, supabase_key)
 
+status_channel_id = int(os.getenv("STATUS_CHANNEL_ID"))
+
+status_embed = discord.Embed(
+    title="Blackjack Status",
+    description="`Online & running smoothly! 🃏`",
+    color=discord.Color.from_str("#00A8B5")
+)
+status_embed.add_field(name="Latency", value=f"`{int(bot.latency * 1000)} ms`", inline=True)
+status_embed.add_field(name="Users", value=f"`{len(bot.users)}`", inline=True)
+status_embed.add_field(name="Servers", value=f"`{len(bot.guilds)}`", inline=True)
+status_embed.set_footer(text=f"Updated at {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+
 def fmt(n):
     return f"{n:,}"
 
@@ -27,6 +39,12 @@ async def on_ready():
     except Exception as e:
         print(f'Error syncing commands: {e}')
     await bot.change_presence(activity=discord.CustomActivity("Counting Cards!"))
+    status_channel = bot.get_channel(status_channel_id)
+    if status_channel:
+        await status_channel.send(embed=status_embed)
+    else:
+        print(f"Status channel with ID {status_channel_id} not found.")
+
     update_status.start()
 
 @tasks.loop(seconds=12)
