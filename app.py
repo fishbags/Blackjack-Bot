@@ -46,18 +46,18 @@ async def update_status():
 @bot.tree.command(name="balance", description="Check your balance")
 async def balance_command(interaction: discord.Interaction):
     user_id = interaction.user.id
-    balance = 0
-    embed = discord.Embed(title="💰 Your Balance", description=f"You have <:coin:1429548357206151401>{fmt(balance)} in your account.", color=discord.Color.from_str("#00A8B5"))
     # Fetch user balance from Supabase
     # Use the latest supabase-py API response handling
     response = supabase_client.table("users").select("balance").eq("id", user_id).execute()
     if response.data and len(response.data) > 0:
         balance = response.data[0]["balance"]
+        embed = discord.Embed(title="💰 Your Balance", description=f"You have <:coin:1429548357206151401>{fmt(balance)} in your account.", color=discord.Color.from_str("#00A8B5"))
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If no user found, create new user with balance 0
     insert_response = supabase_client.table("users").insert({"id": user_id, "balance": 0}).execute()
     if insert_response.data:
+        embed = discord.Embed(title="💰 Your Balance", description=f"You have <:coin:1429548357206151401>{fmt(balance)} in your account.", color=discord.Color.from_str("#00A8B5"))
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     # If still no data, show error
