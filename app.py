@@ -301,6 +301,33 @@ async def highstakes_command(interaction: discord.Interaction, bet: int):
     embed.add_field(name="Dealer's Hand", value=f"{dealer_hand[0]}, ?", inline=False)
     await interaction.response.send_message(embed=embed, view=view)
 
+@bot.tree.command(name="coinflip", description="Flip a coin to win or lose money.")
+async def coinflip_command(interaction: discord.Interaction, choice: str, amount: int):
+    user_id = interaction.user.id
+    choice = choice.lower()
+    if choice not in ['heads', 'tails']:
+        await interaction.response.send_message("Choice must be 'heads' or 'tails'.", ephemeral=True)
+        return
+    if amount <= 0:
+        await interaction.response.send_message("Amount must be greater than <:coin:1429548357206151401>0.", ephemeral=True)
+        return
+    # Fetch user balance
+    response = supabase_client.table("users").select("balance").eq("id", user_id).execute()
+    balance = response.data[0]["balance"] if response.data and len(response.data) > 0 else 0
+    if balance < amount:
+        await interaction.response.send_message("Insufficient balance.", ephemeral=True)
+        return
+    result = random.choice(['heads', 'tails'])
+    if result == choice:
+        new_balance = balance + amount
+        supabase_client.table("users").update({"balance": new_balance}).eq("id", user_id).execute()
+        embed = discord.Embed(title="🪙 Coin Flip", description=f"You won! It was **{result}**.\nYou gained <:coin:1429548357206151401>{fmt(amount)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_green())
+    else:
+        new_balance = balance - amount
+        supabase_client.table("users").update({"balance": new_balance}).eq("id", user_id).execute()
+        embed = discord.Embed(title="🪙 Coin Flip", description=f"You lost! It was **{result}**.\nYou lost <:coin:1429548357206151401>{fmt(amount)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_red())
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 class LeaderboardSelect(discord.ui.Select):
     def __init__(self, interaction):
         options = [
