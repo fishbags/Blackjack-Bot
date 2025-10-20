@@ -328,6 +328,62 @@ async def coinflip_command(interaction: discord.Interaction, choice: str, amount
         embed = discord.Embed(title="🪙 Coin Flip", description=f"You lost! It was **{result}**.\nYou lost <:coin:1429548357206151401>{fmt(amount)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}", color=discord.Color.brand_red())
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+@bot.tree.command(name="diceroll", description="Roll a dice to win or lose money.")
+async def diceroll_command(interaction: discord.Interaction, bet: int):
+    user_id = interaction.user.id
+    if bet <= 0:
+        await interaction.response.send_message("Bet must be greater than <:coin:1429548357206151401>0.", ephemeral=True)
+        return
+    # Fetch user balance
+    response = supabase_client.table("users").select("balance").eq("id", user_id).execute()
+    balance = response.data[0]["balance"] if response.data and len(response.data) > 0 else 0
+    if balance < bet:
+        await interaction.response.send_message("Insufficient balance.", ephemeral=True)
+        return
+    # Choose two adjacent numbers from 1-6
+    first = random.randint(1, 5)
+    second = first + 1
+    chosen = [first, second]
+
+    class DiceRollView(discord.ui.View):
+        def __init__(self, user_id, bet, chosen):
+            super().__init__(timeout=30)
+            self.user_id = user_id
+            self.bet = bet
+            self.chosen = chosen
+            self.rolled = None
+
+        async def interaction_check(self, interaction: discord.Interaction) -> bool:
+            return interaction.user.id == self.user_id
+
+        @discord.ui.button(label="Roll Dice", style=discord.ButtonStyle.primary)
+        async def roll(self, interaction: discord.Interaction, button: discord.ui.Button):
+            self.rolled = random.randint(1, 6)
+            # Fetch user balance again
+            response = supabase_client.table("users").select("balance").eq("id", self.user_id).execute()
+            balance = response.data[0]["balance"] if response.data and len(response.data) > 0 else 0
+            if self.rolled in self.chosen:
+                new_balance = balance + self.bet * 2
+                supabase_client.table("users").update({"balance": new_balance}).eq("id", self.user_id).execute()
+                result = f"🎲 You rolled **{self.rolled}**! You win <:coin:1429548357206151401>{fmt(self.bet * 2)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}"
+                color = discord.Color.brand_green()
+            else:
+                new_balance = balance - self.bet
+                supabase_client.table("users").update({"balance": new_balance}).eq("id", self.user_id).execute()
+                result = f"🎲 You rolled **{self.rolled}**! You lost <:coin:1429548357206151401>{fmt(self.bet)}.\nNew balance: <:coin:1429548357206151401>{fmt(new_balance)}"
+                color = discord.Color.brand_red()
+            embed = discord.Embed(title="🎲 Dice Roll", description=result, color=color)
+            await interaction.response.edit_message(embed=embed, view=None)
+
+    view = DiceRollView(user_id, bet, chosen)
+    embed = discord.Embed(
+        title="🎲 Dice Roll",
+        description=f"Pick: **{chosen[0]}** or **{chosen[1]}**\nIf you roll either, you win <:coin:1429548357206151401>{fmt(bet * 2)}! Otherwise, you lose <:coin:1429548357206151401>{fmt(bet)}.",
+        color=discord.Color.from_str("#00A8B5")
+    )
+    await interaction.response.send_message(embed=embed, view=view)
+    
+
 class LeaderboardSelect(discord.ui.Select):
     def __init__(self, interaction):
         options = [
